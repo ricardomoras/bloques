@@ -201,8 +201,16 @@
   const LINE_POINTS = [0, 100, 300, 500, 800];
 
   const LEVELS = [
-    { speed: 800, accent: '#f7941f' },
-    { speed: 550, accent: '#519fd7' },
+    { speed: 800, accent: '#f7941f' }, // Nivel 1: Naranja
+    { speed: 700, accent: '#519fd7' }, // Nivel 2: Azul cielo
+    { speed: 600, accent: '#5ccf6a' }, // Nivel 3: Verde
+    { speed: 500, accent: '#e8514a' }, // Nivel 4: Rojo coral
+    { speed: 420, accent: '#a463e0' }, // Nivel 5: Púrpura neón
+    { speed: 350, accent: '#3fc7e8' }, // Nivel 6: Cian
+    { speed: 280, accent: '#f2d03b' }, // Nivel 7: Oro
+    { speed: 220, accent: '#ff4081' }, // Nivel 8: Magenta
+    { speed: 170, accent: '#00e676' }, // Nivel 9: Verde neón
+    { speed: 120, accent: '#ff9100' }, // Nivel 10+: Modo maestro
   ];
 
   const COLORS = {
@@ -338,7 +346,10 @@
   }
 
   function applyLevel() {
-    const config = LEVELS[level - 1] || {};
+    const config = LEVELS[level - 1] || {
+      speed: Math.max(80, 120 - (level - LEVELS.length) * 15),
+      accent: LEVELS[(level - 1) % LEVELS.length].accent
+    };
     dropInterval = config.speed;
     document.documentElement.style.setProperty('--accent', config.accent);
     levelEl.textContent = level;
@@ -465,8 +476,20 @@
 
     nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
     if (nextType) {
-      for (const [x, y] of PIECES[nextType][0]) {
-        drawBlock(nextCtx, x, y + 1, 24, COLORS[nextType]);
+      const shape = PIECES[nextType][0];
+      const minX = Math.min(...shape.map(([x]) => x));
+      const maxX = Math.max(...shape.map(([x]) => x));
+      const minY = Math.min(...shape.map(([, y]) => y));
+      const maxY = Math.max(...shape.map(([, y]) => y));
+      const w = (maxX - minX + 1) * 20;
+      const h = (maxY - minY + 1) * 20;
+      const ox = (nextCanvas.width - w) / 2 - minX * 20;
+      const oy = (nextCanvas.height - h) / 2 - minY * 20;
+      for (const [x, y] of shape) {
+        nextCtx.fillStyle = COLORS[nextType];
+        nextCtx.fillRect(ox + x * 20 + 1, oy + y * 20 + 1, 18, 18);
+        nextCtx.fillStyle = 'rgba(255,255,255,.25)';
+        nextCtx.fillRect(ox + x * 20 + 1, oy + y * 20 + 1, 18, 3);
       }
     }
 
@@ -476,7 +499,7 @@
   }
 
   function loop(time = 0) {
-    const delta = time - lastTime;
+    const delta = Math.min(time - lastTime, 250);
     lastTime = time;
 
     if (state === 'playing') {
@@ -552,6 +575,11 @@
     ArrowDown: 'down',
     ArrowUp: 'rotate',
     KeyX: 'rotate',
+    KeyW: 'rotate',
+    KeyA: 'left',
+    KeyD: 'right',
+    KeyS: 'down',
+    KeyZ: 'rotate',
     Space: 'drop',
     KeyP: 'pause',
   };
@@ -578,6 +606,7 @@
   });
 
   document.querySelectorAll('.touch button').forEach((btn) => {
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
     btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       handle(btn.dataset.action);
