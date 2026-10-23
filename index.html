@@ -338,7 +338,8 @@
   }
 
   function applyLevel() {
-    const config = LEVELS[level - 1] || {};
+    // Reutiliza la configuración del último nivel definido si se supera.
+    const config = LEVELS[Math.min(level, LEVELS.length) - 1];
     dropInterval = config.speed;
     document.documentElement.style.setProperty('--accent', config.accent);
     levelEl.textContent = level;
@@ -481,7 +482,7 @@
 
     if (state === 'playing') {
       dropCounter += delta;
-      if (dropCounter > dropInterval) {
+      if (Number.isFinite(dropInterval) && dropCounter > dropInterval) {
         if (!move(0, 1)) lock();
         dropCounter = 0;
       }
